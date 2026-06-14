@@ -1,7 +1,9 @@
 import asyncio
 from fastapi import FastAPI, Path, Query
+from fastapi.responses import HTMLResponse, FileResponse
 import time
-from app.schemas.Users import Users
+from app.schemas.users import Users
+from app.schemas.news import News
 
 app = FastAPI(
     title="backend test",
@@ -15,7 +17,7 @@ def read_root():
 
 @app.get("/hello")
 def hello(name: str):
-    return {"message": f"Hello {name}"}
+    return ['hello world']
 
 @app.get("/sync")
 def func_sync():
@@ -50,6 +52,31 @@ async def get_user_info(
         user: Users
 ):
     return {"name": user.username, "password": user.password}
+
+
+# 装饰器的响应类
+@app.get("/html/{name}", response_class=HTMLResponse)
+async def get_html(name:str):
+    return f"<h1>hello {name}</h1>"
+
+
+# 返回响应对象
+@app.get("/get_file")
+async def get_file():
+    file_path = r"C:\Users\Windows\Downloads\中国高等教育学位在线验证报告_申鑫.pdf"
+    return FileResponse(file_path)
+
+#自定义响应数据格式
+@app.get("/news/{id}", response_model=News)
+async def get_news(
+        id:int = Path(...,gt=2)
+):
+    return {
+        'id':id,
+        'title':'alex'
+    }
+
+
 
 
 
