@@ -2,11 +2,16 @@ import asyncio
 from fastapi import FastAPI, Path, Query, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse, FileResponse
 import time
+
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.schemas.users import Users
 from app.schemas.news import News
 from app.dependencies import common_params
-from app.database import Base, async_engine
+from app.database import Base, async_engine, get_db
 from app.models.book import Book
+from typing import Optional
 
 app = FastAPI(
     title="backend test",
@@ -62,13 +67,6 @@ async def get_book(id: int = Path(..., gt=0, lt=1000)):
         raise HTTPException(status_code=404, detail="你查找的图书id无效")
     return {"id": f'你需要拿到id为{id}的书么'}
 
-@app.get("/news/news_list")
-async def get_news_list(
-        skip1: int = Query(0, gt=0),
-        paras=Depends(common_params)
-):
-    return paras
-
 
 @app.post("/user")
 async def get_user_info(
@@ -90,14 +88,32 @@ async def get_file():
     return FileResponse(file_path)
 
 #自定义响应数据格式
-@app.get("/news/{id}", response_model=News)
+@app.get("/{id}/news", response_model=News)
 async def get_news(
+        title:str,
         id:int = Path(...,gt=2)
 ):
     return {
         'id':id,
-        'title':'alex'
+        'title':title
     }
+
+
+@app.get("/news/news_list")
+async def get_book_list(
+        price:float,
+        book_id:int|None = None,
+        db:AsyncSession = Depends(get_db)
+):
+    # result = await db.execute(
+    #     select(func.sum(Book.price))
+    #       .where((Book.price >= price) & (Book.title.like('%python%')))
+    # )
+    result = await db.execute(
+        select(Book).offset(2).limit(2)
+    )
+    # result = await db.get(Book, book_id)
+    return {'books':result.scalars().all()}
 
 @app.on_event("startup")
 async def startup():
